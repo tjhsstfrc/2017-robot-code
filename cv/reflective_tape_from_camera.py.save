@@ -28,14 +28,15 @@ while(True):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     
     #TEMP VALUES
-    lower_blue = np.array([125, 100, 100])# (B) 80 60 250 (G) 50 20 200
-    upper_blue = np.array([150, 170, 255])# (B) 100 255 255 (G) 100 150 255
+    lower_blue = np.array([80, 60, 200])#80 60 250
+    upper_blue = np.array([100, 150, 255])#100 255 255
 
     
+
     # Threshold the HSV image to get only blue colors
     mask = cv2.inRange(hsv, lower_blue, upper_blue)
     # Bitwise-AND mask and original image
-    cv2.imshow('mask', mask)   
+   
     #Noise
     kernel = np.ones((5,5),np.uint8)
     erosion = cv2.erode(mask,kernel,iterations = 1)
@@ -46,7 +47,7 @@ while(True):
     # Display the resulting frame
    
     cv2.imshow('hsv', hsv)    
-    cv2.imshow('dilation',dilation)
+    cv2.imshow('frame',frame)
     
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break

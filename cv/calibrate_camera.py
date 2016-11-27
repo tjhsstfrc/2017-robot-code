@@ -44,9 +44,9 @@ cv2.setMouseCallback('frame', add_loc)
 while(True):
     # Capture frame-by-frame
     ret,frame = cap.read()
-    
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    frame = hsv
     cv2.imshow('frame',frame)
-
     k = cv2.waitKey(1) & 0xFF
     
     if k == ord('q'):
