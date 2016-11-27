@@ -2,7 +2,7 @@ import cv2
 import imutils
 import numpy as np
 
-img = cv2.imread('original.jpeg',-1)
+img = cv2.imread('./images/skew.jpeg',-1)
 
 frame = imutils.resize(img, width=600)
 
