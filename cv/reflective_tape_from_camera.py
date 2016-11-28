@@ -5,9 +5,11 @@ from imutils.video import WebcamVideoStream
 import time
 from networktables import NetworkTable as NT
 import logging
+import os
 
 logging.basicConfig(level=logging.DEBUG)
 
+goal_y_adjust = 5
 
 ip = 'roborio-3455-frc.local'
 
@@ -28,14 +30,13 @@ while(True):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     
     #TEMP VALUES
-    lower_blue = np.array([125, 100, 100])# (B) 80 60 250 (G) 50 20 200
-    upper_blue = np.array([150, 170, 255])# (B) 100 255 255 (G) 100 150 255
-
+    lower_blue = np.array([60, 120, 175])# (B) 80 60 250 (G) 50 20 200 (R) 125 100 100
+    upper_blue = np.array([180, 255, 255])# (B) 100 255 255 (G) 100 150 255 (R) 150 170 255
     
     # Threshold the HSV image to get only blue colors
     mask = cv2.inRange(hsv, lower_blue, upper_blue)
     # Bitwise-AND mask and original image
-    cv2.imshow('mask', mask)   
+    #cv2.imshow('mask', mask)   
     #Noise
     kernel = np.ones((5,5),np.uint8)
     erosion = cv2.erode(mask,kernel,iterations = 1)
@@ -45,11 +46,11 @@ while(True):
     dilation = cv2.erode(dilation, kernel, iterations = 3)
     # Display the resulting frame
    
-    cv2.imshow('hsv', hsv)    
-    cv2.imshow('dilation',dilation)
+    #cv2.imshow('hsv', hsv)    
+    #cv2.imshow('dilation',dilation)
     
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    #if cv2.waitKey(1) & 0xFF == ord('q'):
+    #    break
     
     cnts = cv2.findContours(dilation.copy(), cv2.RETR_EXTERNAL,
     cv2.CHAIN_APPROX_SIMPLE)
@@ -76,7 +77,7 @@ while(True):
         # then draw the contours and the name of the shape on the image
         c = c.astype("int")
         cv2.drawContours(frame, [c], -1, (0, 255, 0), 2)
-        cv2.circle(frame, (cX, cY), 5, (0,0,255), -1)
+        cv2.circle(frame, (cX, cY - goal_y_adjust), 5, (0,0,255), -1)
      # show the output image
 
     cv2.imshow("Image", frame)
@@ -88,12 +89,14 @@ while(True):
     goalX = width/2.0
     goalY = height/2.0
     #Turning (Set x)
+    os.system('clear')
     if  goalX - cX > 5 or goalX - cX < -5:
         turning = True #send
         table.putBoolean('Turning', turning)
         error = goalX - cX
         pConst = 1.0/goalX
         turnSpeed = pConst*error #send
+        print('TurningSpeed: ' + str(turnSpeed))
         table.putNumber('Turning Value', turnSpeed)
    
     #Back/Forth
@@ -103,6 +106,7 @@ while(True):
         error = goalY - cY
         pConst = -1.0/goalY
         linearSpeed = pConst*error #send
+        print('Linear speed: ' + str(linearSpeed))
         table.putNumber('Linear  Value', linearSpeed)
     
    
