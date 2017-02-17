@@ -43,8 +43,10 @@ public class Robot extends IterativeRobot {
 	Talon backLeft;
 	Talon backRight;
 
+	double WHEEL_CIRCUM = 0.5 * Math.PI;
+	
 	double scalingFactorEncoder = 2.5;
-	double errorFix = 0.05;
+	double errorFix = 0.05; //only when no friction
 	
 	double yAxis1;
 	double yAxis2;
@@ -100,7 +102,7 @@ public class Robot extends IterativeRobot {
 	
 	public void autonomousPeriodic() {
 		table.putNumber("encoder", encoder.getDistance());
-		if(encoder.getDistance() < 1.0 - errorFix) {
+		if(encoder.getDistance() < getEncoderValue(6.0)) {
 			tankDrive(-0.3, -0.3);
 		} else {
 			tankDrive(0.0, 0.0);
@@ -191,6 +193,10 @@ public class Robot extends IterativeRobot {
 
 	public void testPeriodic() {
 		
+	}
+	
+	public double getEncoderValue(double feet) {
+		return feet / WHEEL_CIRCUM;
 	}
 
 }
