@@ -6,6 +6,8 @@ import org.opencv.imgproc.Imgproc;
 import edu.wpi.cscore.CvSink;
 import edu.wpi.cscore.CvSource;
 import edu.wpi.cscore.UsbCamera;
+import edu.wpi.first.wpilibj.AnalogAccelerometer;
+import edu.wpi.first.wpilibj.BuiltInAccelerometer;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.IterativeRobot;
@@ -13,6 +15,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.interfaces.Accelerometer;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
 import edu.wpi.first.wpilibj.Encoder;
 
@@ -42,20 +45,30 @@ public class Robot extends IterativeRobot {
 	Talon frontRight;
 	Talon backLeft;
 	Talon backRight;
+	Talon shooterMotor;
+	Talon feederMotor;
+	Talon climberMotor;
+	Talon intakeMotor;
+	
 
 	double WHEEL_CIRCUM = 0.5 * Math.PI;
-	
 	double scalingFactorEncoder = 2.5;
 	double errorFix = 0.05; //only when no friction
-	
 	double yAxis1;
 	double yAxis2;
 	double leftPower;
 	double rightPower;
 	
+	boolean intakeFlag = false;
+	boolean shooterFlag = false;
+	
+	public static boolean allowOperator = true;
+	
 	// update every 5 milliseconds
 	double kUpdatePeriod = 0.005;
-
+	
+	Accelerometer accel;
+	
 	public void robotInit() {
 		
 		table = NetworkTable.getTable("SmartDashboard");
@@ -89,6 +102,11 @@ public class Robot extends IterativeRobot {
 		backLeft = new Talon(6);
 		backRight = new Talon(7);
 		
+		intakeMotor = new Talon(1);
+		feederMotor = new Talon(2);
+		shooterMotor = new Talon(3);
+		climberMotor = new Talon(4);
+		
 		frontLeft.setInverted(true);
 		backLeft.setInverted(true);
 		
@@ -97,16 +115,25 @@ public class Robot extends IterativeRobot {
 	
 	public void autonomousInit() {
 		encoder.reset();
-//		
+		accel = new BuiltInAccelerometer(); 
+		accel = new BuiltInAccelerometer(Accelerometer.Range.k4G); 
+		
 	}
 	
 	public void autonomousPeriodic() {
-		table.putNumber("encoder", encoder.getDistance());
+		double xVal = accel.getX();
+		double yVal = accel.getY();
+		double zVal = accel.getZ();
+		table.putNumber("xVal", xVal);
+		table.putNumber("yVal", yVal);
+		table.putNumber("zVal", zVal);
+		/*table.putNumber("encoder", encoder.getDistance());
 		if(encoder.getDistance() < getEncoderValue(6.0)) {
 			tankDrive(-0.3, -0.3);
 		} else {
 			tankDrive(0.0, 0.0);
 		}
+		*/
 	}
 
 	public void teleopInit() {
@@ -117,35 +144,68 @@ public class Robot extends IterativeRobot {
 	 * This function is called periodically during operator control
 	 */
 	public void teleopPeriodic() {
-		while (isOperatorControl() && isEnabled()) {
+		while (isOperatorControl() && isEnabled() && this.allowOperator) {
 			
-//			if(first.getRawButton(0)) {
-//				Thread cameraThread = new Thread(() -> {
-//					double turn = table.getNumber("Turning Value", 99.9);
-//					boolean turning = table.getBoolean("Turning", false);
-//			
-//					while(turning){
-//						frontLeft.set(turn);
-//						frontRight.set(-turn);
-//						backLeft.set(turn);
-//						backRight.set(-turn);
-//						turning = table.getBoolean("Turning", false);
-//						turn = table.getNumber("Turning Value", 99.9);
-//					}
-//		        });
-//				cameraThread.setName("cameraThread");
-//				
-//				if(getThreadByName("cameraThread") != null) {
-//					cameraThread.start();
-//				}
-//			}
-//			
+			if(second.getRawButton(1)) {
+				shooterFlag = !shooterFlag;
+			}
+			
+			if(first.getRawButton(1)) {
+				intakeFlag = !intakeFlag;
+			}
+			
+			if(first.getRawButton(7) && first.getRawButton(8) && Robot.allowOperator) {
+				Thread cameraThread = new Thread(() -> {
+					Robot.allowOperator = false;
+					double turn = table.getNumber("Turning Value", 99.9);
+					boolean turning = table.getBoolean("Turning", false);
+			
+					while(turning){
+						frontLeft.set(turn);
+						frontRight.set(-turn);
+						backLeft.set(turn);
+						backRight.set(-turn);
+						turning = table.getBoolean("Turning", false);
+						turn = table.getNumber("Turning Value", 99.9);
+					}
+					
+					frontLeft.set(0.0);
+					frontRight.set(0.0);
+					backLeft.set(0.0);
+					backRight.set(0.0);
+					
+					Robot.allowOperator = true;
+		        });
+				cameraThread.setName("cameraThread");
+				
+				if(getThreadByName("cameraThread") != null) {
+					cameraThread.start();
+				}
+			}			
+			
+			if(shooterFlag) {
+				shooterMotor.set(0.75);
+				feederMotor.set(0.75);
+			} else {
+				shooterMotor.set(0.0);
+				feederMotor.set(0.0);
+			}
+			
+			if(intakeFlag) {
+				intakeMotor.set(0.25);
+			} else {
+				intakeMotor.set(0.0);
+			}
+			
+			if(second.getRawButton(2)) {
+				climberMotor.set(0.8);
+			} else {
+				climberMotor.set(0.0);
+			}
 			
 			table.putNumber("encoder", encoder.getDistance());
 			yAxis1 = first.getRawAxis(1);
 			yAxis2 = first.getRawAxis(5);
-			table.putNumber("Y1", yAxis1);
-    		table.putNumber("Y2", yAxis2);
     		tankDrive(yAxis1, yAxis2);
     		Timer.delay(0.01);
     		// wait to avoid hogging CPU cycles
