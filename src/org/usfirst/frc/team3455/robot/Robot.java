@@ -115,25 +115,16 @@ public class Robot extends IterativeRobot {
 	
 	public void autonomousInit() {
 		encoder.reset();
-		accel = new BuiltInAccelerometer(); 
-		accel = new BuiltInAccelerometer(Accelerometer.Range.k4G); 
-		
 	}
 	
 	public void autonomousPeriodic() {
-		double xVal = accel.getX();
-		double yVal = accel.getY();
-		double zVal = accel.getZ();
-		table.putNumber("xVal", xVal);
-		table.putNumber("yVal", yVal);
-		table.putNumber("zVal", zVal);
-		/*table.putNumber("encoder", encoder.getDistance());
+		table.putNumber("encoder", encoder.getDistance());
 		if(encoder.getDistance() < getEncoderValue(6.0)) {
 			tankDrive(-0.3, -0.3);
 		} else {
 			tankDrive(0.0, 0.0);
 		}
-		*/
+		
 	}
 
 	public void teleopInit() {
@@ -157,16 +148,39 @@ public class Robot extends IterativeRobot {
 			if(first.getRawButton(7) && first.getRawButton(8) && Robot.allowOperator) {
 				Thread cameraThread = new Thread(() -> {
 					Robot.allowOperator = false;
-					double turn = table.getNumber("Turning Value", 99.9);
+					table.putBoolean("startCV", true);
+					
+					try {
+						Thread.sleep(250);
+					} catch (Exception) {
+						;
+					}
+
+					double turn = table.getNumber("Turning_Value", 0.0);
 					boolean turning = table.getBoolean("Turning", false);
 			
-					while(turning){
-						frontLeft.set(turn);
-						frontRight.set(-turn);
-						backLeft.set(turn);
-						backRight.set(-turn);
+					while(turning && turn != 0.0){
+						frontLeft.set(limit(turn));
+						frontRight.set(limit(-turn));
+						backLeft.set(limit(turn));
+						backRight.set(limit(-turn));
 						turning = table.getBoolean("Turning", false);
-						turn = table.getNumber("Turning Value", 99.9);
+						turn = table.getNumber("Turning_Value", 0.0);
+					}
+
+					try {
+						Thread.sleep(250);
+					} catch (Exception) {
+						;
+					}
+
+					double forward = table.getNumber("Linear_Value", 0.0);
+					turning = table.getBoolean("Turning", false);
+
+					while(!turning && forward != 0.0){
+						tankDrive(-forward, -forward);
+						turning = table.getBoolean("Turning", false);
+						turn = table.getNumber("Linear_Value", 0.0);
 					}
 					
 					frontLeft.set(0.0);
@@ -175,6 +189,20 @@ public class Robot extends IterativeRobot {
 					backRight.set(0.0);
 					
 					Robot.allowOperator = true;
+
+					Thread rumbleThread = new Thread(() -> {
+						first.setRumble(RumbleType.kLeftRumble, 0.5);
+						first.setRumble(RumbleType.kRightRumble, 0.5);
+						second.setRumble(RumbleType.kLeftRumble, 0.5);
+						second.setRumble(RumbleType.kRightRumble, 0.5);
+						Thread.sleep(500);
+						first.setRumble(RumbleType.kLeftRumble, 0);
+						first.setRumble(RumbleType.kRightRumble, 0);
+						second.setRumble(RumbleType.kLeftRumble, 0);
+						second.setRumble(RumbleType.kRightRumble, 0);
+		        	});
+		        	rumbleThread.start();
+		        	table.putBoolean("startCV", false);
 		        });
 				cameraThread.setName("cameraThread");
 				
