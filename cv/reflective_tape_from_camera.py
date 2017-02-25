@@ -77,9 +77,10 @@ def run_cv():
          # show the output image
 
         #COMMENT OUT
-        cv2.imshow("Image", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        if(showWindows):
+            cv2.imshow("Image", frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
         
         #Get Center of Imagee
         height, width, channels = frame.shape
