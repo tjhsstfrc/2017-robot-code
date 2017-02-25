@@ -33,7 +33,8 @@ public class Robot extends IterativeRobot {
 	double data = 0.0;
 
 	//RobotDrive myDrive;
-	Joystick first, second;
+	public static Joystick first;
+	public static Joystick second;
 	
 	// Channels for the wheels
 	// final int frontLeftChannel = 4;
@@ -66,8 +67,6 @@ public class Robot extends IterativeRobot {
 	
 	// update every 5 milliseconds
 	double kUpdatePeriod = 0.005;
-	
-	Accelerometer accel;
 	
 	public void robotInit() {
 		
@@ -136,6 +135,11 @@ public class Robot extends IterativeRobot {
 	 */
 	public void teleopPeriodic() {
 		while (isOperatorControl() && isEnabled() && this.allowOperator) {
+
+			//Emergency Shutdown
+			if((first.getRawButton(8) && first.getRawButton(9)) || ((second.getRawButton(8) && second.getRawButton(9)))) {
+				System.exit(1);
+			}
 			
 			if(second.getRawButton(1)) {
 				shooterFlag = !shooterFlag;
@@ -145,7 +149,7 @@ public class Robot extends IterativeRobot {
 				intakeFlag = !intakeFlag;
 			}
 			
-			if(first.getRawButton(7) && first.getRawButton(8) && Robot.allowOperator) {
+			if(first.getRawButton(6) && first.getRawButton(7) && Robot.allowOperator) {
 				Thread cameraThread = new Thread(() -> {
 					Robot.allowOperator = false;
 					table.putBoolean("startCV", true);
@@ -160,6 +164,9 @@ public class Robot extends IterativeRobot {
 					boolean turning = table.getBoolean("Turning", false);
 			
 					while(turning && turn != 0.0){
+						if((first.getRawButton(8) && first.getRawButton(9)) || ((second.getRawButton(8) && second.getRawButton(9)))) {
+							System.exit(1);
+						}
 						frontLeft.set(limit(turn));
 						frontRight.set(limit(-turn));
 						backLeft.set(limit(turn));
@@ -178,6 +185,9 @@ public class Robot extends IterativeRobot {
 					turning = table.getBoolean("Turning", false);
 
 					while(!turning && forward != 0.0){
+						if((first.getRawButton(8) && first.getRawButton(9)) || ((second.getRawButton(8) && second.getRawButton(9)))) {
+							System.exit(1);
+						}
 						tankDrive(-forward, -forward);
 						turning = table.getBoolean("Turning", false);
 						turn = table.getNumber("Linear_Value", 0.0);
